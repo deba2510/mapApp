@@ -52,14 +52,37 @@ class Running extends Workout{
 class App{
     #map;
     #mapEvent;
-    #workoutList = [];
+    #workoutList;
     constructor(){
         try{
             this.#getPosition();
             form.addEventListener('submit',this.#newWorkout.bind(this));
             inputType.addEventListener('change',this.#toggleElevationField.bind(this));
         }catch(error){
+
             console.log(error);
+        }
+    }
+
+    #initWorkOutMarkerAndList(){
+        console.log(this.#workoutList);
+        this.#workoutList.forEach(function(item){
+            item.date = new Date(item.date);
+            this.#renderWorkoutMarker(item);
+            this._renderWorkout(item);
+        }.bind(this));
+    }
+    
+
+    #setWorkoutList(resolve, reject){
+        try{
+            this.#workoutList = JSON.parse(localStorage.getItem('workoutList'));
+            if(this.#workoutList === null){
+                this.#workoutList = [];
+            }
+            resolve();
+        }catch(error){
+            reject(error);
         }
     }
 
@@ -75,17 +98,26 @@ class App{
     }
 
     #loadMap(position){
-        const mapCoord = [position.coords.latitude, position.coords.longitude];
-        this.#map = L.map('map').setView(mapCoord, 13);
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
-            maxZoom: 19,
-            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'})
+        try{
+            const mapCoord = [position.coords.latitude, position.coords.longitude];
+            this.#map = L.map('map').setView(mapCoord, 13);
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
+                maxZoom: 19,
+                attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'})
+                .addTo(this.#map);
+        
+            L.marker(mapCoord)
             .addTo(this.#map);
-    
-        L.marker(mapCoord)
-        .addTo(this.#map);
 
-        this.#map.on("click",this.#showForm.bind(this))
+            this.#map.on("click",this.#showForm.bind(this));
+            
+            this.#setWorkoutList(this.#initWorkOutMarkerAndList.bind(this),  function(error){
+                console.log(error);
+            });
+        }
+        catch(error){
+            console.log(error);
+        }
 
     }
 
@@ -174,7 +206,10 @@ class App{
         }
 
         // Add object to workout array
-        this.#workoutList.push(workoutObj);
+        this.#saveWorkoutInWorkoutList(workoutObj,this.#saveInLocalStorage.bind(this),function(error){
+            return error;
+        });
+        
 
         // Render object on map as marker
         this.#renderWorkoutMarker(workoutObj);
@@ -183,13 +218,27 @@ class App{
         this._renderWorkout(workoutObj);
         
         // SAVE IN LOCAL STORAGE <<TO DO>>
-        const workOutListJSON = JSON.stringify(this.#workoutList);
-        localStorage.setItem("workoutData", workOutListJSON);
-        // console.log(localStorage.getItem("workoutData"));
+        // this.#saveInLocalStorage();
 
         // Clear input and Hide Form
         this.#hideForm();
     }
+
+    #saveInLocalStorage(){
+        const workOutListJSON = JSON.stringify(this.#workoutList);
+        localStorage.setItem("workoutList", workOutListJSON);
+    }
+
+    #saveWorkoutInWorkoutList(workout,resolve, reject){
+        try{
+            this.#workoutList.push(workout);
+            resolve();
+        }
+        catch(error){
+            reject(error);
+        }
+    }
+    
     
     #renderRunning(workout){
         const newListItem = document.createElement('li');
@@ -258,6 +307,6 @@ class App{
     }
 }
 
-new App();
+const myApp = new App();
 
 
