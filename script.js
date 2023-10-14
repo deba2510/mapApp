@@ -53,19 +53,38 @@ class App{
     #map;
     #mapEvent;
     #workoutList;
+    #mapZoomLevel = 13;
     constructor(){
         try{
             this.#getPosition();
             form.addEventListener('submit',this.#newWorkout.bind(this));
             inputType.addEventListener('change',this.#toggleElevationField.bind(this));
+            containerWorkouts.addEventListener('click',this.#moveMapToMarker.bind(this));
         }catch(error){
 
             console.log(error);
         }
     }
 
+    #moveMapToMarker(e){
+        const element = e.target.closest('.workout');
+        if(element === null){
+            return;
+        }
+        const elementID = element.dataset.id;
+        // TODO
+        const selectedWorkoutObj = this.#workoutList.find(function(element){
+            return (element.id === elementID);
+        });
+        console.log(selectedWorkoutObj);
+        // this.#map.setView(selectedWorkoutObj.coords, this.#mapZoomLevel);
+        this.#map.panTo(selectedWorkoutObj.coords,{
+            animate:true,
+            duration:1
+        });
+    }
+
     #initWorkOutMarkerAndList(){
-        console.log(this.#workoutList);
         this.#workoutList.forEach(function(item){
             item.date = new Date(item.date);
             this.#renderWorkoutMarker(item);
@@ -100,7 +119,7 @@ class App{
     #loadMap(position){
         try{
             const mapCoord = [position.coords.latitude, position.coords.longitude];
-            this.#map = L.map('map').setView(mapCoord, 13);
+            this.#map = L.map('map').setView(mapCoord, this.#mapZoomLevel);
             L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
                 maxZoom: 19,
                 attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'})
